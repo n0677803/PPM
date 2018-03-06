@@ -5,22 +5,53 @@
 #include <stdlib.h>
 #include <vector>
 #include <math.h>
+#include <string>
+#include <iostream>
 
 ALLEGRO_BITMAP *testImage, *background, *enemyShip, *projectileMain, *projectileSide;
-int playerX, playerY, frameCount;
+int playerX, playerY, frameCount, windowWidth, windowHeight;
 ALLEGRO_KEYBOARD_STATE *keyboardState;
 std::vector<std::vector<int>> enemyList;
 std::vector<std::vector<int>> projectileList;
+std::vector<std::vector<int>> otherElementsList;
 bool firing = false;
 
 enum myKeys {
 	KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_ESCAPE
 };
 
+class backgroundC {
+protected:
+	int x, y; 
+public:
+	float speed;
+
+	void draw() {
+		al_draw_bitmap(background, x, y, 0);
+		if (y>windowHeight) {
+			y = -(2000 - windowHeight);
+
+			std::cout << "screen flip" << std::endl;
+		}
+		else if (y > 0) {
+			al_draw_bitmap(background, 0, y-2000, 0);
+		}		
+	}
+	void update() {
+		y += speed;
+		
+	}
+
+	void init() {
+		x = 0;
+		y = 0;
+		speed = 1;
+	}
+};
+
 void drawBackground() {
 	al_draw_bitmap(background, 0, (frameCount%2000), 0);
 	al_draw_bitmap(background, 0, ((frameCount % 2000) - 2000), 0);
-
 }
 
 void drawEnemies() {
@@ -41,8 +72,7 @@ void drawProjectiles() {
 }
 
 void drawScreen() {
-
-	drawBackground();
+	
 	drawEnemies();
 	drawProjectiles();
 	al_draw_bitmap(testImage, playerX, playerY, 0);
@@ -60,15 +90,16 @@ void updateProjectiles() {
 			projectileList[i][1] -= 10;
 		}
 	}
-
 }
+
 float distanceBetween(int x1, int y1, int x2, int y2) {
 	return sqrt((((x2 - x1) ^ 2) + ((y2 - y1) ^ 2)));
 }
+
 void updateEnemies() {
-	if (enemyList.size() > 0) {
-		for (int i = 0; i < enemyList.size(); i++) {
-			for (int j = 1; j < projectileList.size(); j++) {
+	if (enemyList.size() > 0 && projectileList.size()>0) {
+		for (int j = 1; j < projectileList.size(); j++) {
+			for (int i = 0; i < enemyList.size(); i++) {
 				if (distanceBetween(projectileList[j][0], projectileList[j][1], enemyList[i][0], enemyList[i][1]) < 30) {
 					enemyList.erase(enemyList.begin() + i);
 				}
@@ -95,8 +126,10 @@ int main()
 	al_init_font_addon();
 	al_init_image_addon();
 	al_install_keyboard();
+	windowHeight = 600;
+	windowWidth = 800;
 
-	ALLEGRO_DISPLAY* display = al_create_display(800, 600);
+	ALLEGRO_DISPLAY* display = al_create_display(windowWidth, windowHeight);
 	ALLEGRO_FONT* font = al_create_builtin_font();
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
@@ -109,6 +142,9 @@ int main()
 	ALLEGRO_EVENT_QUEUE *event_queue = al_create_event_queue();
 	
 	al_register_event_source(event_queue, al_get_keyboard_event_source());
+
+	backgroundC currentBackground;
+	currentBackground.init();
 
 	bool done = false;
 	int xMoveSpeedLeft = 0;
@@ -124,24 +160,16 @@ int main()
 		if (events.type == ALLEGRO_EVENT_KEY_DOWN) {
 			switch (events.keyboard.keycode) {
 			case ALLEGRO_KEY_DOWN:
-				yMoveSpeedDown = 10;
-				
-				printf("down pressed");
+				yMoveSpeedDown = 10;								
 				break;
 			case ALLEGRO_KEY_UP:
-				yMoveSpeedUp = -10;
-				
-				printf("up pressed");
+				yMoveSpeedUp = -10;								
 				break;
 			case ALLEGRO_KEY_LEFT:
-				xMoveSpeedLeft = -10;
-				
-				printf("left pressed");
+				xMoveSpeedLeft = -10;								
 				break;
 			case ALLEGRO_KEY_RIGHT:
-				xMoveSpeedRight = 10;
-				
-				printf("right pressed");
+				xMoveSpeedRight = 10;				
 				break;
 			case ALLEGRO_KEY_ESCAPE:
 				done = true;
@@ -152,25 +180,31 @@ int main()
 			case ALLEGRO_KEY_Z:
 				firing = true;
 				break;
+			case ALLEGRO_KEY_COMMA:
+				currentBackground.speed++;
+				
+				std::cout << currentBackground.speed << std::endl;
+				break;
+			case ALLEGRO_KEY_FULLSTOP:
+				if (currentBackground.speed > 1) {
+					currentBackground.speed--;
+				}
+				break;
 			}
 		}
 		if (events.type == ALLEGRO_EVENT_KEY_UP) {
 			switch (events.keyboard.keycode) {
 			case ALLEGRO_KEY_DOWN:
-				yMoveSpeedDown = 0;
-				printf("down released");
+				yMoveSpeedDown = 0;				
 				break;
 			case ALLEGRO_KEY_UP:
-				yMoveSpeedUp = 0;
-				printf("up released");
+				yMoveSpeedUp = 0;				
 				break;
 			case ALLEGRO_KEY_LEFT:
-				xMoveSpeedLeft = 0;
-				printf("left released");
+				xMoveSpeedLeft = 0;				
 				break;
 			case ALLEGRO_KEY_RIGHT:
-				xMoveSpeedRight = 0;
-				printf("right released");
+				xMoveSpeedRight = 0;				
 				break;
 			case ALLEGRO_KEY_ESCAPE:
 				done = true;
@@ -197,7 +231,9 @@ int main()
 
 		playerX += (xMoveSpeedLeft + xMoveSpeedRight);
 		playerY += (yMoveSpeedUp + yMoveSpeedDown);
+		currentBackground.draw();
 		drawScreen();
+		currentBackground.update();
 		updateProjectiles();
 		updateEnemies();
 		al_rest(1.0 / 60);
