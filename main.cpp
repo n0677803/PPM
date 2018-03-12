@@ -7,18 +7,17 @@
 #include <math.h>
 #include <string>
 #include <iostream>
+#include <cmath>
 
 ALLEGRO_BITMAP *testImage, *background, *enemyShip, *projectileMain, *projectileSide;
 int playerX, playerY, frameCount, windowWidth, windowHeight;
 ALLEGRO_KEYBOARD_STATE *keyboardState;
-std::vector<std::vector<int>> enemyList;
+std::vector<std::vector <int>> enemyList; //lists for sprites
 std::vector<std::vector<int>> projectileList;
 std::vector<std::vector<int>> otherElementsList;
 bool firing = false;
 
-enum myKeys {
-	KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_ESCAPE
-};
+
 
 class backgroundC {
 protected:
@@ -29,16 +28,16 @@ public:
 	void draw() {
 		al_draw_bitmap(background, x, y, 0);
 		if (y>windowHeight) {
-			y = -(2000 - windowHeight);
+			y = -(2000 - windowHeight); // if off screen move back up to teselate
 
-			std::cout << "screen flip" << std::endl;
+			
 		}
 		else if (y > 0) {
-			al_draw_bitmap(background, 0, y-2000, 0);
+			al_draw_bitmap(background, 0, y-2000, 0);//draws teserlated background when main partially off screen
 		}		
 	}
 	void update() {
-		y += speed;
+		y += speed;//moves background down screen
 		
 	}
 
@@ -49,16 +48,49 @@ public:
 	}
 };
 
-void drawBackground() {
-	al_draw_bitmap(background, 0, (frameCount%2000), 0);
-	al_draw_bitmap(background, 0, ((frameCount % 2000) - 2000), 0);
+float distanceBetween(int x1, int y1, int x2, int y2) {
+	return sqrt((((x2 - x1) ^ 2) + ((y2 - y1) ^ 2)));
 }
 
-void drawEnemies() {
-	for (int i = 0; i < enemyList.size(); i++) {
-		al_draw_bitmap(enemyShip,enemyList[i][0],enemyList[i][1],0);
+class standardEnemy {
+
+protected:
+	int x, y, power, xOffSet, yOffSet;
+	float gradient;
+	
+public:
+	void draw(){
+		al_draw_bitmap(enemyShip,x+xOffSet,y+yOffSet,0);
+		//std::cout << x + xOffSet << "  " << y + yOffSet << std::endl;
 	}
-}
+	void getNewWaypoint() { // sets next point to move towards
+	
+	}
+	void update() {
+		x += 1;
+		y = gradient*(pow(x,power));
+		std::cout << x << " " << y << std::endl;
+		for (int j = 1; j < projectileList.size(); j++) {
+			
+				if (distanceBetween(projectileList[j][0], projectileList[j][1], x, y) < 30) {
+					y = 2000; //removes enemy if projectile comes within set distance
+				}
+			
+		}
+
+	}
+	void init(int tempx,int tempy,int tempOffx,int tempOffy,float tempgradient, int temppower) {
+		x = tempx;
+		y = tempy;
+		xOffSet = tempOffx;
+		yOffSet = tempOffy;
+		gradient = tempgradient;
+		power = temppower;
+	}
+
+};
+
+
 
 void drawProjectiles() {
 	for (int i = 0; i < projectileList.size(); i++) {
@@ -73,7 +105,7 @@ void drawProjectiles() {
 
 void drawScreen() {
 	
-	drawEnemies();
+	
 	drawProjectiles();
 	al_draw_bitmap(testImage, playerX, playerY, 0);
 	al_flip_display();
@@ -84,7 +116,7 @@ void drawScreen() {
 void updateProjectiles() {
 	for (int i = 0; i < projectileList.size(); i++) {
 		if (projectileList[i][1] < -100) {
-			projectileList.erase(projectileList.begin() + i);
+			projectileList.erase(projectileList.begin() + i); //removed from list if too far off screen
 		}
 		else {
 			projectileList[i][1] -= 10;
@@ -92,16 +124,14 @@ void updateProjectiles() {
 	}
 }
 
-float distanceBetween(int x1, int y1, int x2, int y2) {
-	return sqrt((((x2 - x1) ^ 2) + ((y2 - y1) ^ 2)));
-}
+
 
 void updateEnemies() {
-	if (enemyList.size() > 0 && projectileList.size()>0) {
+	if (enemyList.size() > 0 && projectileList.size()>0) { 
 		for (int j = 1; j < projectileList.size(); j++) {
 			for (int i = 0; i < enemyList.size(); i++) {
 				if (distanceBetween(projectileList[j][0], projectileList[j][1], enemyList[i][0], enemyList[i][1]) < 30) {
-					enemyList.erase(enemyList.begin() + i);
+					enemyList.erase(enemyList.begin() + i); //removes enemy if projectile comes within set distance
 				}
 			}
 		}
@@ -109,20 +139,19 @@ void updateEnemies() {
 }
 
 
-void spawnEnemy() {
-	std::vector<int> temp;
-	temp.push_back(100);
-	temp.push_back(100);
-	enemyList.push_back(temp);
+void spawnEnemy() { //adds enemy to enemy vector
+	standardEnemy temp;
+	temp.init(0,0,10,10,1,3);
+	//enemyList.push_back(temp);
 }
 
-void handleInput() {
-
-}
+//void handleInput() {
+//
+//}
 
 int main()
 {
-	al_init();
+	al_init(); // initilisations
 	al_init_font_addon();
 	al_init_image_addon();
 	al_install_keyboard();
@@ -134,7 +163,7 @@ int main()
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
 
-	testImage = al_load_bitmap("ship.png");
+	testImage = al_load_bitmap("ship.png"); // load images to sprites
 	background = al_load_bitmap("background1.png");
 	enemyShip = al_load_bitmap("enemyShip.png");
 	projectileMain = al_load_bitmap("Red_note_.png");
@@ -145,14 +174,14 @@ int main()
 
 	backgroundC currentBackground;
 	currentBackground.init();
-
+	standardEnemy test;
 	bool done = false;
 	int xMoveSpeedLeft = 0;
 	int xMoveSpeedRight = 0;
 	int yMoveSpeedUp = 0;
 	int yMoveSpeedDown = 0;
 
-	while (!done) {
+	while (!done) { //user input handling
 		ALLEGRO_EVENT events;
 		al_wait_for_event_timed(event_queue, &events, 1/60);
 
@@ -175,7 +204,7 @@ int main()
 				done = true;
 				break;
 			case ALLEGRO_KEY_J:
-				spawnEnemy();
+				test.init(1, 1, -50, -30, 0.01, 2);
 				break;
 			case ALLEGRO_KEY_Z:
 				firing = true;
@@ -183,7 +212,7 @@ int main()
 			case ALLEGRO_KEY_COMMA:
 				currentBackground.speed++;
 				
-				std::cout << currentBackground.speed << std::endl;
+				//std::cout << currentBackground.speed << std::endl;
 				break;
 			case ALLEGRO_KEY_FULLSTOP:
 				if (currentBackground.speed > 1) {
@@ -215,7 +244,7 @@ int main()
 			}
 		}
 
-		if (firing && (frameCount%5==0)) {
+		if (firing && (frameCount%5==0)) { //fires every 5 frames
 			std::vector<int> temp;
 			temp.push_back(playerX);
 			temp.push_back(playerY);
@@ -229,14 +258,17 @@ int main()
 			projectileList.push_back(temp);
 		}
 
-		playerX += (xMoveSpeedLeft + xMoveSpeedRight);
+		playerX += (xMoveSpeedLeft + xMoveSpeedRight);//updates player position
 		playerY += (yMoveSpeedUp + yMoveSpeedDown);
-		currentBackground.draw();
+		currentBackground.draw();//other updates
+		test.draw();
 		drawScreen();
 		currentBackground.update();
+		
 		updateProjectiles();
-		updateEnemies();
-		al_rest(1.0 / 60);
+		test.update();
+
+		al_rest(1.0 / 60);//framerate limiter
 	}
 	
 
