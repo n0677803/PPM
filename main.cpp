@@ -8,11 +8,13 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+#include "enemys.h"
 
 ALLEGRO_BITMAP *testImage, *background, *enemyShip, *projectileMain, *projectileSide;
 int playerX, playerY, frameCount, windowWidth, windowHeight;
 ALLEGRO_KEYBOARD_STATE *keyboardState;
-std::vector<std::vector <int>> enemyList; //lists for sprites
+std::vector<enemyClass> enemyList;
+
 std::vector<std::vector<int>> projectileList;
 std::vector<std::vector<int>> otherElementsList;
 bool firing = false;
@@ -49,48 +51,20 @@ public:
 };
 
 float distanceBetween(int x1, int y1, int x2, int y2) {
-	return sqrt((((x2 - x1) ^ 2) + ((y2 - y1) ^ 2)));
+	return sqrt((pow((x2 - x1),2)) + (pow((y2 - y1),2)));
 }
 
-class standardEnemy {
-
-protected:
-	int x, y, power, xOffSet, yOffSet;
-	float gradient;
-	
-public:
-	void draw(){
-		al_draw_bitmap(enemyShip,x+xOffSet,y+yOffSet,0);
-		//std::cout << x + xOffSet << "  " << y + yOffSet << std::endl;
-	}
-	void getNewWaypoint() { // sets next point to move towards
-	
-	}
-	void update() {
-		x += 1;
-		y = gradient*(pow(x,power));
-		std::cout << x << " " << y << std::endl;
-		for (int j = 1; j < projectileList.size(); j++) {
-			
-				if (distanceBetween(projectileList[j][0], projectileList[j][1], x, y) < 30) {
-					y = 2000; //removes enemy if projectile comes within set distance
-				}
-			
+void hitDetectionEnemysPlayerProjectiles() {
+	for (int i = 0; i < enemyList.size(); i++) {
+		for (int j = 0; j < projectileList.size(); j++) {
+			if (distanceBetween(enemyList[i].x,enemyList[i].y,projectileList[j][0],projectileList[j][1])<15) {
+				projectileList.erase(projectileList.begin()+j);
+				enemyList.erase(enemyList.begin()+i);
+				break;
+			}
 		}
-
 	}
-	void init(int tempx,int tempy,int tempOffx,int tempOffy,float tempgradient, int temppower) {
-		x = tempx;
-		y = tempy;
-		xOffSet = tempOffx;
-		yOffSet = tempOffy;
-		gradient = tempgradient;
-		power = temppower;
-	}
-
-};
-
-
+}
 
 void drawProjectiles() {
 	for (int i = 0; i < projectileList.size(); i++) {
@@ -104,7 +78,10 @@ void drawProjectiles() {
 }
 
 void drawScreen() {
-	
+	for (int i = 0; i < enemyList.size(); i++) {
+		enemyList[i].draw();
+		enemyList[i].update();
+	}
 	
 	drawProjectiles();
 	al_draw_bitmap(testImage, playerX, playerY, 0);
@@ -124,30 +101,6 @@ void updateProjectiles() {
 	}
 }
 
-
-
-void updateEnemies() {
-	if (enemyList.size() > 0 && projectileList.size()>0) { 
-		for (int j = 1; j < projectileList.size(); j++) {
-			for (int i = 0; i < enemyList.size(); i++) {
-				if (distanceBetween(projectileList[j][0], projectileList[j][1], enemyList[i][0], enemyList[i][1]) < 30) {
-					enemyList.erase(enemyList.begin() + i); //removes enemy if projectile comes within set distance
-				}
-			}
-		}
-	}
-}
-
-
-void spawnEnemy() { //adds enemy to enemy vector
-	standardEnemy temp;
-	temp.init(0,0,10,10,1,3);
-	//enemyList.push_back(temp);
-}
-
-//void handleInput() {
-//
-//}
 
 int main()
 {
@@ -174,7 +127,7 @@ int main()
 
 	backgroundC currentBackground;
 	currentBackground.init();
-	standardEnemy test;
+	
 	bool done = false;
 	int xMoveSpeedLeft = 0;
 	int xMoveSpeedRight = 0;
@@ -203,8 +156,15 @@ int main()
 			case ALLEGRO_KEY_ESCAPE:
 				done = true;
 				break;
-			case ALLEGRO_KEY_J:
-				test.init(1, 1, -50, -30, 0.01, 2);
+			case ALLEGRO_KEY_J: // test key for enemy spawn
+				
+				break;
+			case ALLEGRO_KEY_L:
+				enemyClass temp;
+				temp.init(1, 1, -50, -30, 0.01, 2,enemyShip);
+				enemyList.push_back(temp);
+
+				//test key for class list
 				break;
 			case ALLEGRO_KEY_Z:
 				firing = true;
@@ -261,12 +221,12 @@ int main()
 		playerX += (xMoveSpeedLeft + xMoveSpeedRight);//updates player position
 		playerY += (yMoveSpeedUp + yMoveSpeedDown);
 		currentBackground.draw();//other updates
-		test.draw();
+		
 		drawScreen();
 		currentBackground.update();
-		
+		hitDetectionEnemysPlayerProjectiles();
 		updateProjectiles();
-		test.update();
+		
 
 		al_rest(1.0 / 60);//framerate limiter
 	}
