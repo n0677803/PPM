@@ -1,0 +1,66 @@
+#pragma once
+#define HEADER
+
+#include <allegro5/allegro.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_image.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+#include <math.h>
+#include <string>
+#include <iostream>
+#include <cmath>
+
+
+class backgroundC {
+//Variables
+protected:
+	int x, y;
+	ALLEGRO_BITMAP *background;
+public:
+	float speed;
+
+//Functions
+void draw();
+void update();
+void init();
+};
+
+class standardEnemy {
+
+protected:
+	int x, y, power, xOffSet, yOffSet;
+	float gradient;
+
+
+
+
+public:
+	void draw();
+	void getNewWaypoint();
+	void update();
+
+	void init(int tempx, int tempy, int tempOffx, int tempOffy, float tempgradient, int temppower) {
+		x = tempx;
+		y = tempy;
+		xOffSet = tempOffx;
+		yOffSet = tempOffy;
+		gradient = tempgradient;
+		power = temppower;
+	}
+
+};
+
+
+int Gameplay();
+
+float distanceBetween(int x1, int y1, int x2, int y2);
+
+void spawnEnemy();
+void updateEnemies();
+
+void drawProjectiles();
+void updateProjectiles();
+
+void drawScreen();
